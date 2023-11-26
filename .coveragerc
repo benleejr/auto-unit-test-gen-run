@@ -1,0 +1,8 @@
+[run]
+branch = true
+
+[report]
+exclude_also =
+	import
+	from
+	__main__

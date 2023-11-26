@@ -1,0 +1,7 @@
+OPENAI_API_KEY=YOURKEY
+
+Linux Based
+export FLASK_APP=unit_test_call
+
+Windows Based
+set FLASK_APP=unit_test_call 
