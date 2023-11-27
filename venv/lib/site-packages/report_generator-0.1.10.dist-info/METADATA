@@ -1,0 +1,21 @@
+Metadata-Version: 2.1
+Name: report-generator
+Version: 0.1.10
+Summary: HTML report generator - note that github repo is private
+Home-page: https://github.com/joelhoro/report-generator
+Author: Joel Horowitz
+Author-email: joelhoro@gmail.com
+License: UNKNOWN
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+
+# report-generator
+
+SMTP + sample HTML banner
+
+Testing
+

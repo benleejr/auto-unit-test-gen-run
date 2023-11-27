@@ -3,7 +3,7 @@
 import React from 'react';
 import OpenAI from "openai";
 
-const UploadButtonClientComponent = ({ inputId, apiKey }: { inputId: string }) => {
+const UploadButtonClientComponent = ({ inputId, apiKey }: { inputId: string, apiKey: string}) => {
     const processFile = () => {
         const fileInput = document.getElementById(inputId) as HTMLInputElement;
         const files = fileInput.files;

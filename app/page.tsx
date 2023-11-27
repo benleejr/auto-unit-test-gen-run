@@ -15,19 +15,19 @@ const DynamicUploadButton = dynamic(
 
 export default function Home() {
   const [apiKey, setApiKey] = useState('');
-  const [files, setFiles] = useState<FileList | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [pdfLink, setPdfLink] = useState('');
   const [zipLink, setZipLink] = useState('');
   const [loading, setLoading] = useState(false);
   const [pdfLoaded, setPdfLoaded] = useState(false);
 
-  const [selectedFileNames, setSelectedFileNames] = useState([]);
+  const [selectedFileNames, setSelectedFileNames] = useState<string[]>([]);
 
   const { getRootProps, getInputProps } = useDropzone({
-    accept: '.py',
-    onDrop: (acceptedFiles) => {
+    accept: '.py' as any,
+    onDrop: (acceptedFiles: File[]) => {
       setFiles(acceptedFiles);
-      const fileNames = acceptedFiles.map(file => file.path);
+      const fileNames = acceptedFiles.map(file => file.name);
       setSelectedFileNames(fileNames);
     }
   });
@@ -35,7 +35,7 @@ export default function Home() {
   async function handleGenerateClick() {
     setLoading(true);
     if (!files) {
-      alert("Please upload a file first.");
+      alert('Please upload a file first.');
       setLoading(false);
       return;
     }
@@ -51,7 +51,7 @@ export default function Home() {
           const reader = new FileReader();
           reader.onload = function(e: any) {
             const content = e.target.result;
-            axios.post('http://127.0.0.1:5000/upload', { file_content: content, file_name: files[i].name, api_key: apiKey }, {
+            axios.post('http://127.0.0.1:8000/api/upload', { file_content: content, file_name: files[i].name, api_key: apiKey }, {
               headers: {
                 'Content-Type': 'application/json'
               }
@@ -75,7 +75,7 @@ export default function Home() {
     reader.onload = async function(e: any) {
       const content = e.target.result;
 
-      let response = await fetch('http://127.0.0.1:5000/run_tests', {
+      let response = await fetch('http://127.0.0.1:8000/api/run_tests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,9 +112,9 @@ export default function Home() {
           <h1 style={{fontSize: '2em', fontWeight: 'bold'}}>How to Use:</h1>
           <div style={{ height: '20px' }}></div>
           <ol>
-            <li>1. Input your API key from OpenAI into the textbox labelled: 'OpenAI API Key'.</li>
+            <li>1. Input your API key from OpenAI into the textbox labelled: &apos;OpenAI API Key&apos;.</li>
             <li>2. Drag and drop or click the icon and select the files or folder that you would like to have unit tests generated for.</li>
-            <li>3. After the relevant files have been uploaded, click on "Run Tests & Generate PDF".</li>
+            <li>3. After the relevant files have been uploaded, click on &apos;Run Tests &amp; Generate PDF&apos;.</li>
           </ol>
         </div>
 
@@ -168,7 +168,7 @@ export default function Home() {
           marginBottom: '10px',
           transition: 'background-color 0.3s ease',
           }}>
-          Run Tests & Generate PDF
+          Run Tests &amp; Generate PDF
         </button>
 
         {/* Animated Status Bar */}
@@ -182,7 +182,7 @@ export default function Home() {
         {zipLink && (
             <button
               className="uploadButton"
-              onClick={() => window.open(`http://127.0.0.1:5000${zipLink}`, '_blank')}
+              onClick={() => window.open(`http://127.0.0.1:8000${zipLink}`, '_blank')}
               style={{
                 padding: '10px 15px',
                 backgroundColor: '#007BFF',
@@ -208,7 +208,7 @@ export default function Home() {
       ) : pdfLink && (
           <div className="w-3/4 justify-end align-top"> 
             <iframe
-              src={`http://127.0.0.1:5000${pdfLink}`}
+              src={`http://127.0.0.1:8000${pdfLink}`}
               style={{ width: '100%', height: '85vh' }} 
               frameBorder="0"
               onLoad={() => {
@@ -222,7 +222,7 @@ export default function Home() {
             <h1 style={{fontSize: '2em', fontWeight: 'bold'}}>Understanding Your Results:</h1>
               <p>You will be given a PDF report detailing your submitted files after the tests are generated and run. You will also be able to download a ZIP file containing a copy of your PDF report as well as the generated tests files.</p>
             <h1 style={{fontSize: '2em', fontWeight: 'bold'}}>Reading the Report:</h1>
-              <h2 style={{fontSize: '1.5em', fontWeight: 'bold'}}>Each table's title is the name of the file that you submitted. Below is a quick explanation of each column of the table:</h2>
+              <h2 style={{fontSize: '1.5em', fontWeight: 'bold'}}>Each table&apos;s title is the name of the file that you submitted. Below is a quick explanation of each column of the table:</h2>
               <ul>
                 <li><b>Total Tests Run -</b> This is the total number of tests run for your file.</li>
                 <li><b>Tests Passed -</b> This is the number of tests that passed without issue.</li>

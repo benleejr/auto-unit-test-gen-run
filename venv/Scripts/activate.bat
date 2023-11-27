@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=E:\Documents\Git\auto-test\unit-test-auto\venv
+set VIRTUAL_ENV=C:\Users\bened\Documents\GIT\auto-unit-test-gen-run\venv
 
 if not defined PROMPT set PROMPT=$P$G
 

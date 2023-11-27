@@ -1,12 +1,12 @@
-import { Document, Metadata } from 'next/document'
+import Document, { Head, Main } from 'next/document'
 
 class MyDocument extends Document {
   render() {
     return (
       <html lang="en">
-        <Metadata>
+        <Head>
           <link rel="icon" href="/mcneesefavicon.png" />
-        </Metadata>
+        </Head>
         <body>
           <Main />
         </body>
