@@ -44,7 +44,7 @@ const Home = () => {
           const reader = new FileReader();
           reader.onload = function(e: any) {
             const content = e.target.result;
-            axios.post('http://127.0.0.1:8000/api/upload', { file_content: content, file_name: files[i].name, api_key: apiKey }, {
+            axios.post('https://auto-unit-test-gen-run.vercel.app/api/upload', { file_content: content, file_name: files[i].name, api_key: apiKey }, {
               headers: {
                 'Content-Type': 'application/json'
               }
@@ -68,7 +68,7 @@ const Home = () => {
     reader.onload = async function(e: any) {
       const content = e.target.result;
 
-      let response = await fetch('http://127.0.0.1:8000/api/run_tests', {
+      let response = await fetch('https://auto-unit-test-gen-run.vercel.app/api/run_tests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -172,7 +172,7 @@ const Home = () => {
         {zipLink && (
             <button
               className="uploadButton"
-              onClick={() => window.open(`http://127.0.0.1:8000${zipLink}`, '_blank')}
+              onClick={() => window.open(`https://auto-unit-test-gen-run.vercel.app/${zipLink}`, '_blank')}
               style={{
                 padding: '10px 15px',
                 backgroundColor: '#007BFF',
@@ -198,7 +198,7 @@ const Home = () => {
       ) : pdfLink && (
           <div className="w-3/4 justify-end align-top"> 
             <iframe
-              src={`http://127.0.0.1:8000${pdfLink}`}
+              src={`https://auto-unit-test-gen-run.vercel.app/${pdfLink}`}
               style={{ width: '100%', height: '85vh' }} 
               frameBorder="0"
               onLoad={() => {
