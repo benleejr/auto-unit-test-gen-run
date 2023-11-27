@@ -100,11 +100,11 @@ def load_file_contents(file):
        return file_contents
 
 #Function will generate unit tests using an API call with GPT
-def generate_tests(file, file_content, api_key):
+def generate_tests(file, file_content, key):
     file_name = os.path.splitext(file)[0]
     file_content = f"{file_content}"
            
-    client = OpenAI(api_key=api_key)
+    client = OpenAI(api_key=key)
     response = client.ChatCompletion.create(
     model="gpt-3.5-turbo-16k-0613",
     messages=[

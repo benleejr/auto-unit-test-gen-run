@@ -1,19 +1,13 @@
 //app/page.tsx
-'use client'
-import React, { useState, useRef, useEffect } from 'react';
-import dynamic from 'next/dynamic';
+"use client"
+import React, { useState } from 'react';
 import axios from 'axios';
-import LinearProgress from '@mui/material/LinearProgress';
-import CircularProgress from '@mui/material/CircularProgress';
+import { LinearProgress, CircularProgress } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
-import Layout from './layout';
+import Head from 'next/head'
+import Layout from '../components/Layout';
 
-const DynamicUploadButton = dynamic(
-  () => import('./UploadButtonClientComponent'),
-  { ssr: false }
-);
-
-export default function Home() {
+const Home = () => {
   const [apiKey, setApiKey] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [pdfLink, setPdfLink] = useState('');
@@ -46,7 +40,6 @@ export default function Home() {
 
     for (let i = 0; i < files.length; i++) {
       if (files[i].name.endsWith('.py')) {
-        // Wrap reading and uploading in a new Promise
         const uploadPromise = new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = function(e: any) {
@@ -101,9 +94,6 @@ export default function Home() {
 
   return (
     <Layout>
-    <div className="w-full bg-blue-500 text-white text-center py-4 mb-8">
-      <h1 style={{fontSize: '1.5em'}}>Automatic Unit Test Generator and Runner</h1>
-    </div>
     
     <main className="flex min-h-screen p-5">
       <div className="flex flex-col w-1/4 p-4 justify-center align-top">
@@ -229,7 +219,7 @@ export default function Home() {
                 <li><b>Total Errors -</b> This is the number of tests which produced errors.</li>
                 <li><b>Runtime -</b> This is how long it took to generate, run, and record the results for the tests.</li>
                 <li><b>Pass/Fail Ratio -</b> This is the total number of passed tests divided by the number of total tests. Higher is better.</li>
-                <li><b>Coverage -</b> This is how much, line by line, of your original code was covered during testing. IE. if a test did not enter an if statement the lines in that if statement would not be covered. Higher is better.</li>
+                <li><b>Coverage -</b> This is how much, line by line, of your original code was covered during testing. For example: if a test did not enter an if statement the lines in that if statement would not be covered. Higher is better.</li>
               </ul>
               <h2 style={{fontSize: '1.5em', fontWeight: 'bold'}}>Error Box - This final box contains the error messages produced, if any. It has some of its own information broken down below:</h2>
               <ul>
@@ -260,3 +250,4 @@ export default function Home() {
     </Layout>
   );  
 }
+export default Home;
