@@ -18,11 +18,11 @@ UPLOAD_FOLDER = 'tests'
 app = Flask(__name__)
 
 cors = CORS(app, resources={
-    r"/api/healthchecker": {"origins": "http://localhost:3000"},
-    r"/api/run_tests": {"origins": "http://localhost:3000"},
-    r"/api/generate-pdf": {"origins": "http://localhost:3000"},
-    r"/api/download-pdf/*": {"origins": "http://localhost:3000"},
-    r"/api/upload": {"origins": "http://localhost:3000"}
+    r"/api/healthchecker": {"origins": "https://auto-unit-test-gen-run.vercel.app/"},
+    r"/api/run_tests": {"origins": "https://auto-unit-test-gen-run.vercel.app/"},
+    r"/api/generate-pdf": {"origins": "https://auto-unit-test-gen-run.vercel.app/"},
+    r"/api/download-pdf/*": {"origins": "https://auto-unit-test-gen-run.vercel.app/"},
+    r"/api/upload": {"origins": "https://auto-unit-test-gen-run.vercel.app/"}
 })
 
 @app.route("/api/healthchecker", methods=["GET"])
@@ -60,14 +60,14 @@ def upload_file():
 
 # Sends PDF to reports folder
 @app.route('/reports/<filename>', methods=['GET'])
-@cross_origin(origin='http://localhost:3000', headers=['Content-Type'])
+@cross_origin(origin='https://auto-unit-test-gen-run.vercel.app/', headers=['Content-Type'])
 def download_pdf(filename):
     directory = os.path.join(os.getcwd(), "reports")
     return send_from_directory(directory, filename)
 
 # Downloads ZIP results
 @app.route('/output/<filename>', methods=['GET'])
-@cross_origin(origin='http://localhost:3000', headers=['Content-Type'])
+@cross_origin(origin='https://auto-unit-test-gen-run.vercel.app/', headers=['Content-Type'])
 def download_zip(filename):
     directory = os.path.join(os.getcwd(), "output")
     return send_from_directory(directory, filename)
@@ -153,7 +153,7 @@ def generate_tests(file, file_content, key):
 
 #Run Each Generated Test in the 'tests' folder.
 @app.route('/api/run_tests', methods=['POST', 'OPTIONS'])
-@cross_origin(origin='http://localhost:3000', methods=['POST'], allow_headers=['Content-Type'], headers=['Access-Control-Allow-Origin'])
+@cross_origin(origin='https://auto-unit-test-gen-run.vercel.app/', methods=['POST'], allow_headers=['Content-Type'], headers=['Access-Control-Allow-Origin'])
 def run_tests():
     global report_data
     global cov
