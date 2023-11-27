@@ -37,6 +37,7 @@ const Home = () => {
     setPdfLoaded(false);
 
     const uploadPromises = [];
+    const url = process.env.NODE_ENV === 'production' ? 'https://auto-unit-test-gen-run.vercel.app/api/upload' : 'http://127.0.0.1:8000/api/upload';
 
     for (let i = 0; i < files.length; i++) {
       if (files[i].name.endsWith('.py')) {
@@ -44,7 +45,7 @@ const Home = () => {
           const reader = new FileReader();
           reader.onload = function(e: any) {
             const content = e.target.result;
-            axios.post('https://auto-unit-test-gen-run.vercel.app/api/upload', { file_content: content, file_name: files[i].name, api_key: apiKey }, {
+            axios.post(url, { file_content: content, file_name: files[i].name, api_key: apiKey }, {
               headers: {
                 'Content-Type': 'application/json'
               }
@@ -67,8 +68,9 @@ const Home = () => {
     const reader = new FileReader();
     reader.onload = async function(e: any) {
       const content = e.target.result;
+      const runTestsUrl = process.env.NODE_ENV === 'production' ? 'https://auto-unit-test-gen-run.vercel.app/api/run_tests' : 'http://127.0.0.1:8000/api/run_tests';
 
-      let response = await fetch('https://auto-unit-test-gen-run.vercel.app/api/run_tests', {
+      let response = await fetch(runTestsUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -172,7 +174,7 @@ const Home = () => {
         {zipLink && (
             <button
               className="uploadButton"
-              onClick={() => window.open(`https://auto-unit-test-gen-run.vercel.app/${zipLink}`, '_blank')}
+              onClick={() => window.open(`${process.env.NODE_ENV === 'production' ? 'https://auto-unit-test-gen-run.vercel.app/' : 'http://127.0.0.1:3000/'}${zipLink}`, '_blank')}
               style={{
                 padding: '10px 15px',
                 backgroundColor: '#007BFF',
@@ -198,7 +200,7 @@ const Home = () => {
       ) : pdfLink && (
           <div className="w-3/4 justify-end align-top"> 
             <iframe
-              src={`https://auto-unit-test-gen-run.vercel.app/${pdfLink}`}
+              src={`${process.env.NODE_ENV === 'production' ? 'https://auto-unit-test-gen-run.vercel.app/' : 'http://127.0.0.1:3000/'}${pdfLink}`}
               style={{ width: '100%', height: '85vh' }} 
               frameBorder="0"
               onLoad={() => {

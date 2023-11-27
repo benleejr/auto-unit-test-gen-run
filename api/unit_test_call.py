@@ -11,19 +11,46 @@ import time
 import unittest
 import report_generator
 import importlib
-from flask import Flask, request, send_from_directory, jsonify, make_response
+from flask import Flask, request, send_file, jsonify, make_response
 from flask_cors import CORS, cross_origin
+
+import boto3
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv('.env')
+
+# Get S3 credentials from environment variables
+S3_ACCESS_KEY = os.getenv('S3_ACCESS_KEY')
+S3_SECRET_ACCESS_KEY = os.getenv('S3_SECRET_ACCESS_KEY')
+
+# Create the low level functional client
+client = boto3.client(
+    's3',
+    aws_access_key_id = S3_ACCESS_KEY,
+    aws_secret_access_key = S3_SECRET_ACCESS_KEY,
+    region_name = 'us-east-2'
+)
+    
+# Create the high level object oriented interface
+resource = boto3.resource(
+    's3',
+    aws_access_key_id = S3_ACCESS_KEY,
+    aws_secret_access_key = S3_SECRET_ACCESS_KEY,
+    region_name = 'us-east-2'
+)
 
 UPLOAD_FOLDER = 'tests'
 app = Flask(__name__)
 
 cors = CORS(app, resources={
-    r"/api/healthchecker": {"origins": "https://auto-unit-test-gen-run.vercel.app/"},
-    r"/api/run_tests": {"origins": "https://auto-unit-test-gen-run.vercel.app/"},
-    r"/api/generate-pdf": {"origins": "https://auto-unit-test-gen-run.vercel.app/"},
-    r"/api/download-pdf/*": {"origins": "https://auto-unit-test-gen-run.vercel.app/"},
-    r"/api/upload": {"origins": "https://auto-unit-test-gen-run.vercel.app/"}
+    r"/api/healthchecker": {"origins": ["https://auto-unit-test-gen-run.vercel.app/", "http://localhost:3000"]},
+    r"/api/run_tests": {"origins": ["https://auto-unit-test-gen-run.vercel.app/", "http://localhost:3000"]},
+    r"/api/generate-pdf": {"origins": ["https://auto-unit-test-gen-run.vercel.app/", "http://localhost:3000"]},
+    r"/api/download-pdf/*": {"origins": ["https://auto-unit-test-gen-run.vercel.app/", "http://localhost:3000"]},
+    r"/api/upload": {"origins": ["https://auto-unit-test-gen-run.vercel.app/", "http://localhost:3000"]}
 })
+
 
 @app.route("/api/healthchecker", methods=["GET"])
 @cross_origin(origin='https://auto-unit-test-gen-run.vercel.app/', headers=['Content-Type'])
@@ -51,27 +78,29 @@ def upload_file():
     
   if file_content and file_name:
     # Save the file_contents to a .py file in the folder uploads
-    with open(f"uploads/{file_name}", 'w') as file:
-      file.write(file_content)
+    #with open(f"uploads/{file_name}", 'w') as file:
+    #  file.write(file_content)
+    
+    client.upload_file(f"uploads/{file_name}", 'auto-unit-test-generator-runner', file_name)
     generate_tests(file_name, file_content, api_key)  # Pass the file name and its content to generate_tests to generate the unit test file.
   else:
     return 'No file content or file name provided', 400
 
   return 'Files uploaded successfully'
 
-# Sends PDF to reports folder
+# Sends PDF to reports folder in the S3 bucket
 @app.route('/reports/<filename>', methods=['GET'])
 @cross_origin(origin='https://auto-unit-test-gen-run.vercel.app/', headers=['Content-Type'])
 def download_pdf(filename):
-    directory = os.path.join(os.getcwd(), "reports")
-    return send_from_directory(directory, filename)
+    client.download_file('auto-unit-test-generator-runner', f'reports/{filename}', f'{filename}')
+    return send_file(filename, as_attachment=True)
 
-# Downloads ZIP results
+# Downloads ZIP results from the S3 bucket
 @app.route('/output/<filename>', methods=['GET'])
 @cross_origin(origin='https://auto-unit-test-gen-run.vercel.app/', headers=['Content-Type'])
 def download_zip(filename):
-    directory = os.path.join(os.getcwd(), "output")
-    return send_from_directory(directory, filename)
+    client.download_file('auto-unit-test-generator-runner', f'output/{filename}', f'{filename}')
+    return send_file(filename, as_attachment=True)
    
 # Loads the test module and runs the tests
 def run_tests_and_capture_output(test):
@@ -150,6 +179,10 @@ def generate_tests(file, file_content, key):
     with open(f'output/test_{file_name}.py', 'w') as test_file:
         test_file.write(generated_code)
 
+    # Write output to the s3 bucket 'auto-unit-test-generator-runner'
+    client.upload_file(f'tests/test_{file_name}.py', 'auto-unit-test-generator-runner', f'tests/test_{file_name}.py')
+    client.upload_file(f'output/test_{file_name}.py', 'auto-unit-test-generator-runner', f'output/test_{file_name}.py')
+
     return 'Test files generated successfully'
 
 #Run Each Generated Test in the 'tests' folder.
@@ -161,9 +194,13 @@ def run_tests():
     report_data.clear()
     report_dir = os.path.join(os.getcwd(), "reports")
     
-    for file in os.listdir('tests'):
-        if file.startswith('test_') and file.endswith('.py'):    
-            module_name = file[:-3]  # remove .py extension
+    # Fetch the list of existing objects in the bucket
+    clientResponse = client.list_objects(Bucket='auto-unit-test-generator-runner')
+    
+    for obj in clientResponse['Contents']:
+        if obj['Key'].startswith('tests/test_') and obj['Key'].endswith('.py'):    
+            file = obj['Key']
+            module_name = file[11:-3]  # remove 'tests/test_' prefix and .py extension
             test_module = importlib.import_module(f"tests.{module_name}")
             
             # Record start time
@@ -178,7 +215,7 @@ def run_tests():
             total_tests = results.testsRun
             num_passed_tests = results.testsRun - (len(results.errors) + len(results.failures))
             num_errs = len(results.errors) + len(results.failures)
-            file_name = file[5:]  # remove 'test_' prefix
+            file_name = file[11:]  # remove 'tests/test_' prefix
             total_time = end_time - start_time
             formatted_time = "{:.2f}".format(total_time)
             pass_fail_ratio = ((results.testsRun - (len(results.errors) + len(results.failures))) / results.testsRun) * 100
@@ -209,8 +246,15 @@ def run_tests():
     unique_zip_filename = f"output_{int(time.time())}.zip"
     create_zip(unique_zip_filename)
     
-    empty_folder('tests', '__init__.py')
-    empty_folder('uploads')
+    # Delete all objects in the 'tests' and 'uploads' folders in the bucket
+    client.delete_objects(
+        Bucket='auto-unit-test-generator-runner',
+        Delete={
+            'Objects': [
+                {'Key': obj['Key']} for obj in clientResponse['Contents'] if obj['Key'].startswith('tests/') or obj['Key'].startswith('uploads/')
+            ]
+        }
+    )
     
     return jsonify({
         "path": unique_report_filename,
@@ -258,17 +302,21 @@ def empty_folder(folder_path, file_to_keep=None):
     except Exception as e:
         print(f"An error occured: {e}")
         
-# Creates a zip file for the report and test code generated for user
+# Creates a zip file for the report and test code generated for user and uploads it to S3 bucket
 def create_zip(zip_filename):
-    files_to_add = list_files_in_folder(output_dir)
+    files_to_add = list_files_in_folder_and_upload_to_s3(output_dir)
     with zipfile.ZipFile(os.path.join("output", zip_filename), 'w') as myzip:
         for file_to_add in files_to_add:
             myzip.write(os.path.join(os.getcwd(), "output", file_to_add), os.path.basename(file_to_add))
+    # Upload the zip file to the S3 bucket 'auto-unit-test-generator-runner'
+    client.upload_file(os.path.join("output", zip_filename), 'auto-unit-test-generator-runner', zip_filename)
         
-# Adds all files in the output dir to a list to be zipped
-def list_files_in_folder(folder_path):
+# Adds all files in the output dir to a list to be zipped and uploads them to the S3 bucket 'auto-unit-test-generator-runner'
+def list_files_in_folder_and_upload_to_s3(folder_path):
     files = os.listdir(folder_path)
     files = [file for file in files if os.path.isfile(os.path.join(folder_path, file))]
+    for file in files:
+        client.upload_file(os.path.join(folder_path, file), 'auto-unit-test-generator-runner', file)
     return files
 
 if __name__ == '__main__':
