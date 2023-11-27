@@ -4,6 +4,19 @@ provider:
   name: aws
   runtime: python3.8
 
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    noDeploy:
+      - setuptools
+      - boto3
+      - botocore
+      - s3transfer
+    dockerizePip: non-linux
+    slim: true
+
 functions:
   hello:
     handler: handler.hello
