@@ -26,6 +26,7 @@ cors = CORS(app, resources={
 })
 
 @app.route("/api/healthchecker", methods=["GET"])
+@cross_origin(origin='https://auto-unit-test-gen-run.vercel.app/', headers=['Content-Type'])
 def healthchecker():
     return {"status": "success", "message": "Integrate Flask Framework with Next.js"}
 
