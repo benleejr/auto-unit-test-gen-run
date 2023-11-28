@@ -13,32 +13,17 @@ import report_generator
 import importlib
 from flask import Flask, request, send_file, jsonify, make_response
 from flask_cors import CORS, cross_origin
-
-import boto3
 from dotenv import load_dotenv
+import cloudinary
+
+cloudinary.config( 
+  cloud_name = os.getenv('CLOUD_NAME'), 
+  api_key = os.getenv('API_KEY'), 
+  api_secret = os.getenv('API_SECRET') 
+)
 
 # Load environment variables from .env file
 load_dotenv('.env')
-
-# Get S3 credentials from environment variables
-S3_ACCESS_KEY = os.getenv('S3_ACCESS_KEY')
-S3_SECRET_ACCESS_KEY = os.getenv('S3_SECRET_ACCESS_KEY')
-
-# Create the low level functional client
-client = boto3.client(
-    's3',
-    aws_access_key_id = S3_ACCESS_KEY,
-    aws_secret_access_key = S3_SECRET_ACCESS_KEY,
-    region_name = 'us-east-2'
-)
-    
-# Create the high level object oriented interface
-resource = boto3.resource(
-    's3',
-    aws_access_key_id = S3_ACCESS_KEY,
-    aws_secret_access_key = S3_SECRET_ACCESS_KEY,
-    region_name = 'us-east-2'
-)
 
 UPLOAD_FOLDER = 'tests'
 app = Flask(__name__)
