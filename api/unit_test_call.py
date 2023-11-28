@@ -323,4 +323,4 @@ def list_files_in_folder_and_upload(folder_path):
     return files
 
 if __name__ == '__main__':
-    app.run(use_reloader=False)
+    app.run()
