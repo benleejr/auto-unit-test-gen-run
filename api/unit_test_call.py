@@ -44,16 +44,16 @@ UPLOAD_FOLDER = 'tests'
 app = Flask(__name__)
 
 cors = CORS(app, resources={
-    r"/api/healthchecker": {"origins": ["https://auto-unit-test-gen-run-mveljqqada-uc.a.run.app/", "http://localhost:3000"]},
-    r"/api/run_tests": {"origins": ["https://auto-unit-test-gen-run-mveljqqada-uc.a.run.app/", "http://localhost:3000"]},
-    r"/api/generate-pdf": {"origins": ["https://auto-unit-test-gen-run-mveljqqada-uc.a.run.app/", "http://localhost:3000"]},
-    r"/api/download-pdf/*": {"origins": ["https://auto-unit-test-gen-run-mveljqqada-uc.a.run.app/", "http://localhost:3000"]},
-    r"/api/upload": {"origins": ["https://auto-unit-test-gen-run-mveljqqada-uc.a.run.app/", "http://localhost:3000"]}
+    r"/api/healthchecker": {"origins": ["https://auto-unit-test-gen-run.vercel.app/", "http://localhost:3000"]},
+    r"/api/run_tests": {"origins": ["https://auto-unit-test-gen-run.vercel.app/", "http://localhost:3000"]},
+    r"/api/generate-pdf": {"origins": ["https://auto-unit-test-gen-run.vercel.app/", "http://localhost:3000"]},
+    r"/api/download-pdf/*": {"origins": ["https://auto-unit-test-gen-run.vercel.app/", "http://localhost:3000"]},
+    r"/api/upload": {"origins": ["https://auto-unit-test-gen-run.vercel.app/", "http://localhost:3000"]}
 })
 
 
 @app.route("/api/healthchecker", methods=["GET"])
-@cross_origin(origin='https://auto-unit-test-gen-run-mveljqqada-uc.a.run.app/', headers=['Content-Type'])
+@cross_origin(origin='https://auto-unit-test-gen-run.vercel.app/', headers=['Content-Type'])
 def healthchecker():
     return {"status": "success", "message": "Integrate Flask Framework with Next.js"}
 
@@ -90,14 +90,14 @@ def upload_file():
 
 # Sends PDF to reports folder in the S3 bucket
 @app.route('/reports/<filename>', methods=['GET'])
-@cross_origin(origin='https://auto-unit-test-gen-run-mveljqqada-uc.a.run.app/', headers=['Content-Type'])
+@cross_origin(origin='https://auto-unit-test-gen-run.vercel.app/', headers=['Content-Type'])
 def download_pdf(filename):
     client.download_file('auto-unit-test-generator-runner', f'reports/{filename}', f'{filename}')
     return send_file(filename, as_attachment=True)
 
 # Downloads ZIP results from the S3 bucket
 @app.route('/output/<filename>', methods=['GET'])
-@cross_origin(origin='https://auto-unit-test-gen-run-mveljqqada-uc.a.run.app/', headers=['Content-Type'])
+@cross_origin(origin='https://auto-unit-test-gen-run.vercel.app/', headers=['Content-Type'])
 def download_zip(filename):
     client.download_file('auto-unit-test-generator-runner', f'output/{filename}', f'{filename}')
     return send_file(filename, as_attachment=True)
@@ -187,7 +187,7 @@ def generate_tests(file, file_content, key):
 
 #Run Each Generated Test in the 'tests' folder.
 @app.route('/api/run_tests', methods=['POST', 'OPTIONS'])
-@cross_origin(origin='https://auto-unit-test-gen-run-mveljqqada-uc.a.run.app/', methods=['POST'], allow_headers=['Content-Type'], headers=['Access-Control-Allow-Origin'])
+@cross_origin(origin='https://auto-unit-test-gen-run.vercel.app/', methods=['POST'], allow_headers=['Content-Type'], headers=['Access-Control-Allow-Origin'])
 def run_tests():
     global report_data
     global cov
@@ -319,5 +319,5 @@ def list_files_in_folder_and_upload_to_s3(folder_path):
         client.upload_file(os.path.join(folder_path, file), 'auto-unit-test-generator-runner', file)
     return files
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+if __name__ == '__main__':
+    app.run(use_reloader=False)
