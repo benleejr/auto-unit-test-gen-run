@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "flask-dev": "cross-env FLASK_DEBUG=1 pip3 install -r requirements.txt && python -m flask --app api/unit_test_call run -p 8000 --reload",
+    "flask-dev": "cross-env FLASK_DEBUG=1 pip3 install -r requirements.txt && python -m flask --app api/unit_test_call run -p ${PORT:-8000} --reload",
     "next-dev": "next dev",
     "dev": "concurrently \"npm run next-dev\" \"npm run flask-dev\"",
     "lint": "next lint",
