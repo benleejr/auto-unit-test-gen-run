@@ -11,10 +11,14 @@ import time
 import unittest
 import report_generator
 import importlib
-from flask import Flask, request, send_file, jsonify, make_response
+from flask import Flask, request, send_file, jsonify, make_response, send_from_directory
 from flask_cors import CORS, cross_origin
 from dotenv import load_dotenv
 import cloudinary
+from cloudinary.uploader import upload, destroy
+from cloudinary.utils import cloudinary_url
+from werkzeug.utils import secure_filename
+from cloudinary.api import resources_by_tag, delete_resources_by_tag
 
 cloudinary.config( 
   cloud_name = os.getenv('CLOUD_NAME'), 
@@ -61,31 +65,29 @@ def upload_file():
   file_name = data.get('file_name')
   api_key = data.get('api_key')
     
-  if file_content and file_name:
-    # Save the file_contents to a .py file in the folder uploads
-    #with open(f"uploads/{file_name}", 'w') as file:
-    #  file.write(file_content)
-    
-    client.upload_file(f"uploads/{file_name}", 'auto-unit-test-generator-runner', file_name)
+  if file_content and file_name:   
+    # Upload the file to Cloudinary
+    upload_result = upload(f"uploads/{file_name}", folder = "uploads")
     generate_tests(file_name, file_content, api_key)  # Pass the file name and its content to generate_tests to generate the unit test file.
   else:
     return 'No file content or file name provided', 400
 
   return 'Files uploaded successfully'
 
-# Sends PDF to reports folder in the S3 bucket
+# Call the function after the download routes
 @app.route('/reports/<filename>', methods=['GET'])
 @cross_origin(origin='https://auto-unit-test-gen-run.vercel.app/', headers=['Content-Type'])
 def download_pdf(filename):
-    client.download_file('auto-unit-test-generator-runner', f'reports/{filename}', f'{filename}')
-    return send_file(filename, as_attachment=True)
+    response = send_from_directory('reports', filename)
+    delete_files_from_folder_in_cloudinary('reports')
+    return response
 
-# Downloads ZIP results from the S3 bucket
 @app.route('/output/<filename>', methods=['GET'])
 @cross_origin(origin='https://auto-unit-test-gen-run.vercel.app/', headers=['Content-Type'])
 def download_zip(filename):
-    client.download_file('auto-unit-test-generator-runner', f'output/{filename}', f'{filename}')
-    return send_file(filename, as_attachment=True)
+    response = send_from_directory('output', filename)
+    delete_files_from_folder_in_cloudinary('output')
+    return response
    
 # Loads the test module and runs the tests
 def run_tests_and_capture_output(test):
@@ -164,9 +166,9 @@ def generate_tests(file, file_content, key):
     with open(f'output/test_{file_name}.py', 'w') as test_file:
         test_file.write(generated_code)
 
-    # Write output to the s3 bucket 'auto-unit-test-generator-runner'
-    client.upload_file(f'tests/test_{file_name}.py', 'auto-unit-test-generator-runner', f'tests/test_{file_name}.py')
-    client.upload_file(f'output/test_{file_name}.py', 'auto-unit-test-generator-runner', f'output/test_{file_name}.py')
+    # Upload the test files to Cloudinary
+    upload(f'tests/test_{file_name}.py')
+    upload(f'output/test_{file_name}.py')
 
     return 'Test files generated successfully'
 
@@ -179,12 +181,10 @@ def run_tests():
     report_data.clear()
     report_dir = os.path.join(os.getcwd(), "reports")
     
-    # Fetch the list of existing objects in the bucket
-    clientResponse = client.list_objects(Bucket='auto-unit-test-generator-runner')
+    file_list = get_file_list_from_cloudinary_or_your_application()
     
-    for obj in clientResponse['Contents']:
-        if obj['Key'].startswith('tests/test_') and obj['Key'].endswith('.py'):    
-            file = obj['Key']
+    for file in file_list:
+        if file.startswith('tests/test_') and file.endswith('.py'):    
             module_name = file[11:-3]  # remove 'tests/test_' prefix and .py extension
             test_module = importlib.import_module(f"tests.{module_name}")
             
@@ -232,19 +232,27 @@ def run_tests():
     create_zip(unique_zip_filename)
     
     # Delete all objects in the 'tests' and 'uploads' folders in the bucket
-    client.delete_objects(
-        Bucket='auto-unit-test-generator-runner',
-        Delete={
-            'Objects': [
-                {'Key': obj['Key']} for obj in clientResponse['Contents'] if obj['Key'].startswith('tests/') or obj['Key'].startswith('uploads/')
-            ]
-        }
-    )
+    # This part needs to be replaced with your own logic to delete files from Cloudinary or your application.
+    delete_files_from_cloudinary_or_your_application(file_list)
     
     return jsonify({
         "path": unique_report_filename,
         "zip": unique_zip_filename
     })
+#End Run_Tests
+
+def get_file_list_from_cloudinary_or_your_application(tag):
+    resources = resources_by_tag(tag)
+    file_list = [resource['public_id'] for resource in resources['resources']]
+    return file_list
+
+def delete_files_from_cloudinary_or_your_application(tag):
+    delete_resources_by_tag(tag)
+
+def get_file_ids_from_folder_in_your_application(tag):
+    resources = resources_by_tag(tag)
+    file_ids = [resource['public_id'] for resource in resources['resources']]
+    return file_ids
     
 # Formats errors
 def format_errors_and_failures(errors_and_failures, max_line_width=140):
@@ -270,6 +278,15 @@ def format_errors_and_failures(errors_and_failures, max_line_width=140):
     else:
         return '\n'.join(formatted_errors)
     
+    
+def delete_files_from_folder_in_cloudinary(folder):
+# Get the list of file IDs in the folder
+    file_ids = get_file_ids_from_folder_in_your_application(folder)
+
+# Delete each file
+    for file_id in file_ids:
+        destroy(file_id)
+#end delete_files_from_folder_in_cloudinary()
  
 # Clear out tests folder except the __init__.py file as that is necessary for imports to function.
 def empty_folder(folder_path, file_to_keep=None):
@@ -287,21 +304,22 @@ def empty_folder(folder_path, file_to_keep=None):
     except Exception as e:
         print(f"An error occured: {e}")
         
-# Creates a zip file for the report and test code generated for user and uploads it to S3 bucket
+# Creates a zip file for the report and test code generated for user and uploads it to Cloudinary
 def create_zip(zip_filename):
-    files_to_add = list_files_in_folder_and_upload_to_s3(output_dir)
+    files_to_add = list_files_in_folder_and_upload(output_dir)
     with zipfile.ZipFile(os.path.join("output", zip_filename), 'w') as myzip:
         for file_to_add in files_to_add:
             myzip.write(os.path.join(os.getcwd(), "output", file_to_add), os.path.basename(file_to_add))
-    # Upload the zip file to the S3 bucket 'auto-unit-test-generator-runner'
-    client.upload_file(os.path.join("output", zip_filename), 'auto-unit-test-generator-runner', zip_filename)
+    # Upload the zip file to Cloudinary
+    upload_result = upload(os.path.join("output", zip_filename), folder = "output")
         
-# Adds all files in the output dir to a list to be zipped and uploads them to the S3 bucket 'auto-unit-test-generator-runner'
-def list_files_in_folder_and_upload_to_s3(folder_path):
+# Adds all files in the output dir to a list to be zipped and uploads them to Cloudinary
+def list_files_in_folder_and_upload(folder_path):
     files = os.listdir(folder_path)
     files = [file for file in files if os.path.isfile(os.path.join(folder_path, file))]
     for file in files:
-        client.upload_file(os.path.join(folder_path, file), 'auto-unit-test-generator-runner', file)
+        # Upload the file to Cloudinary
+        upload_result = upload(os.path.join(folder_path, file), folder = "output")
     return files
 
 if __name__ == '__main__':
