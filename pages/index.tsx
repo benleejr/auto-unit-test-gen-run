@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { LinearProgress, CircularProgress } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
-import Head from 'next/head'
 import Layout from '../components/Layout';
 
 const Home = () => {

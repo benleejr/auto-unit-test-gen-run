@@ -75,14 +75,14 @@ def upload_file():
   return 'Files uploaded successfully'
 
 # Call the function after the download routes
-@app.route('/reports/<filename>', methods=['GET'])
+@app.route('/api/download-pdf', methods=['GET'])
 @cross_origin(origin='https://auto-unit-test-gen-run.vercel.app/', headers=['Content-Type'])
 def download_pdf(filename):
     response = send_from_directory('reports', filename)
     delete_files_from_folder_in_cloudinary('reports')
     return response
 
-@app.route('/output/<filename>', methods=['GET'])
+@app.route('/api/download-zip', methods=['GET'])
 @cross_origin(origin='https://auto-unit-test-gen-run.vercel.app/', headers=['Content-Type'])
 def download_zip(filename):
     response = send_from_directory('output', filename)
