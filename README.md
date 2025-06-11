@@ -55,3 +55,31 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+## Standalone CLI Usage
+
+If you prefer running the application without a web server you can generate unit
+tests and reports using the provided `cli.py` script.  It requires Python
+dependencies from `requirements.txt` and an OpenAI API key.
+
+```
+pip install -r requirements.txt
+python cli.py path/to/your_file.py --api-key YOUR_OPENAI_KEY
+```
+
+After running, a PDF report will be created in the `reports` directory and a zip
+archive containing the report and generated tests will be placed in the `output`
+directory.
+
+### Building an Executable
+
+You can package the CLI into a single executable using
+[PyInstaller](https://pyinstaller.org/):
+
+```
+pip install pyinstaller
+pyinstaller --onefile cli.py
+```
+
+The resulting executable will appear in the `dist` folder and can be distributed
+without requiring Python to be installed.
